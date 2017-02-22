@@ -3,9 +3,13 @@ import { IonicApp, IonicModule, IonicErrorHandler } from 'ionic-angular';
 import { MyApp } from './app.component';
 
 import { HomePage } from '../pages/home/home';
+
 import { QuestionerPage } from '../pages/questioner/questioner';
 
-import { QuestionGeneratorService} from '../logic/services/question-generator.service';
+import { QuestionGeneratorService } from '../logic/services/question-generator.service';
+import { QuestionsService } from '../logic/services/questions.service';
+
+import { QuestionFactory } from '../logic/factories/question.factory';
 
 
 @NgModule({
@@ -24,8 +28,10 @@ import { QuestionGeneratorService} from '../logic/services/question-generator.se
     QuestionerPage
   ],
   providers: [
-    {provide: ErrorHandler, useClass: IonicErrorHandler},
-    QuestionGeneratorService
+    { provide: ErrorHandler, useClass: IonicErrorHandler },
+    QuestionGeneratorService,
+    QuestionsService,
+    QuestionFactory
   ]
 })
-export class AppModule {}
+export class AppModule { }

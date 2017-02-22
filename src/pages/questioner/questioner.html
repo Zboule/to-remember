@@ -14,5 +14,22 @@
 
 
 <ion-content padding>
-  {{curentQuestion.question}}
+  <ion-card>
+    <ion-card-content>
+      {{curentQuestion.question}}
+    </ion-card-content>
+    <button *ngIf="!isAnswerVisibile" ion-button full (click)="showAnswer()">
+      Afficher la réponse
+    </button>
+    <button *ngIf="isAnswerVisibile" ion-button full (click)="clickCorrectAnswer()">
+      Bingo !
+    </button>
+    <button *ngIf="isAnswerVisibile" ion-button full (click)="clickWrongAnswer()">
+      Oups, raté
+    </button>
+    <ion-card-content *ngIf="isAnswerVisibile">
+      {{curentQuestion.answer}}
+    </ion-card-content>
+  </ion-card>
+
 </ion-content>
