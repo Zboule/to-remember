@@ -24,7 +24,7 @@ export class QuestionGeneratorService {
     }
 
     setQuestionCategories(categories: string[]): void {
-        this.questions = undefined;
+        this.questions;
         this.questionsService.getQuestionsByCategories(categories).subscribe(
             questions => this.setListOfQuestion(questions)
         )
@@ -55,13 +55,14 @@ export class QuestionGeneratorService {
     }
 
     private selectNextQuestion(): Question {
-        console.log(this.questions);
-        this.sortQuestionByRatio();
+        this.sortQuestionByDate();
         return this.questions[0];
     }
 
-    private sortQuestionByRatio() {
-        this.questions.sort((questionA: Question, questionB: Question) => questionA.getAnswerRatio() - questionB.getAnswerRatio());
+    private sortQuestionByDate() {
+        this.questions.sort((questionA: Question, questionB: Question) => {
+            return questionA.getLastUserAnswerDate().getTime() - questionB.getLastUserAnswerDate().getTime();
+        });
     }
 
     private setListOfQuestion(questions: Question[]): void {

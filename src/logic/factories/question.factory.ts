@@ -14,9 +14,6 @@ export class QuestionFactory {
         question.answer = jsonData.answer;
         question.question = jsonData.question;
         question.categories = jsonData.categories;
-        question.numberOfCorrectAnswer = jsonData.numberOfCorrectAnswer;
-        question.numberOfWrongAnswer = jsonData.numberOfWrongAnswer;
-
         return question;
     }
 }
