@@ -1,7 +1,9 @@
 import { UserAnswer } from './user-answer';
 import { AcquisitionState } from './acquisition-state';
 
-import { Observer } from 'rxjs';
+import { Observer, Observable } from 'rxjs';
+
+import { QuestionsCounter } from '../services/questions-counter.service'
 
 export class Question {
 
@@ -14,15 +16,18 @@ export class Question {
 
     userAnswer: UserAnswer[];
 
-    questionHaveNewAnswerObserver: Observer<Question>[];
+    observers: Observer<Question>[];
 
-    constructor() {
+    constructor(
+        private questionsCounter: QuestionsCounter
+    ) {
         this.question = undefined;
         this.answer = undefined;
-        this.setAcquisitionState();
+        this.userAnswer = [];
         this.userAnswer = []
         this.categories = [];
-        this.questionHaveNewAnswerObserver = [];
+        this.observers = [];
+        this.setAcquisitionState();
     }
 
     hasCategory(categoryName: string): boolean {
@@ -40,21 +45,54 @@ export class Question {
     }
 
     getLastUserAnswerAgeInSeconde(): number {
-        return 100; //TODO: Todo :p
+        if (this.hasUserAnswer()) {
+            return new Date().getTime() - this.getLastUserAnswerDate().getTime();
+        } else {
+            return undefined;
+        }
     }
 
     getLastUserAnswerDate(): Date {
         if (this.hasUserAnswer()) {
-            let indexLastUserAnswer = this.userAnswer.length - 1;
-            return this.userAnswer[indexLastUserAnswer].date;
-        }
-        else {
-            return new Date(1989, 5, 31);
+            return this.getLastUserAnswer().date;
+        } else {
+            return undefined;
         }
     }
 
-    addQuestionHaveNewAnswerObserver(observer: Observer<Question>) {
-        this.questionHaveNewAnswerObserver.push(observer);
+    getObservableQuestion(): Observable<Question> {
+        return new Observable<Question>(
+            (observer: Observer<Question>) => this.addObserver(observer)
+        );//TODO: Les observers ne sont jamais retirés :p
+    }
+
+    compareByAnserOrder(otherQuestion: Question): number {
+        return this.getLastQuestionNumber() - otherQuestion.getLastQuestionNumber();
+    }
+
+    getLastQuestionNumber(): number {
+        let lastAnswer = this.getLastUserAnswer();
+        if (lastAnswer !== undefined) {
+            return lastAnswer.questionNumber;
+        }
+        else {
+            return 0;
+        }
+    }
+
+    getLastAnserOrderFromGrobalLastAnswer (): number {
+       return this.getLastQuestionNumber() - this.questionsCounter.getQuestionsCount ();
+    }
+
+    private getLastUserAnswer() {
+        let lastUserAnswer = undefined;
+        if (this.userAnswer.length > 0) {
+            lastUserAnswer = this.userAnswer[this.userAnswer.length - 1];
+        }
+        return lastUserAnswer;
+    }
+    private addObserver(observer: Observer<Question>) {
+        this.observers.push(observer);
     }
 
     private setAcquisitionState() {
@@ -83,28 +121,23 @@ export class Question {
             if (this.userAnswer[i].isGoodAnswer) {
                 numberOfGoodAnswerInLastAnswers++;
             }
+            numberOfAnswerToConsiderate--;
         }
         return numberOfGoodAnswerInLastAnswers;
     }
 
     private addNewUserAnswer(isGoodAnswer: boolean) {
-        const newUserAnswer = new UserAnswer(this.getCurrentDate(), isGoodAnswer);
+        const newUserAnswer = new UserAnswer(this.questionsCounter.getQuestionCount(), isGoodAnswer);
         this.userAnswer.push(newUserAnswer);
         this.setAcquisitionState();
         this.notifiyObserver();
     }
 
     private notifiyObserver() {
-        this.questionHaveNewAnswerObserver.forEach(observer => observer.next(this));
+        this.observers.forEach(observer => observer.next(this));
     }
 
-    private getCurrentDate(): Date {
-        const date = new Date();
-        console.log(date);
-        return new Date();
-    }
-
-    private hasUserAnswer(): boolean {
+    hasUserAnswer(): boolean {
         return this.userAnswer.length !== 0;
     }
 }

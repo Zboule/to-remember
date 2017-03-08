@@ -14,7 +14,8 @@
 
 
 <ion-content padding>
-  <ion-card>
+  <ion-card *ngIf="curentQuestion !== undefined">
+    {{acquisitionState[curentQuestion.acquisitionState]}}
     <ion-card-content>
       {{curentQuestion.question}}
     </ion-card-content>

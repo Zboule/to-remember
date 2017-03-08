@@ -6,8 +6,9 @@ import { HomePage } from '../pages/home/home';
 
 import { QuestionerPage } from '../pages/questioner/questioner';
 
-import { QuestionGeneratorService } from '../logic/services/question-generator.service';
+import { QuestionsScheduler } from '../logic/services/questions-scheduler.service';
 import { QuestionsService } from '../logic/services/questions.service';
+import { QuestionsCounter } from '../logic/services/questions-counter.service';
 
 import { QuestionFactory } from '../logic/factories/question.factory';
 
@@ -29,9 +30,10 @@ import { QuestionFactory } from '../logic/factories/question.factory';
   ],
   providers: [
     { provide: ErrorHandler, useClass: IonicErrorHandler },
-    QuestionGeneratorService,
+    QuestionsScheduler,
     QuestionsService,
-    QuestionFactory
+    QuestionFactory,
+    QuestionsCounter
   ]
 })
 export class AppModule { }

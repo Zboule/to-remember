@@ -3,10 +3,12 @@ import { Injectable } from '@angular/core';
 import { Question } from '../entities/question';
 import { AcquisitionState } from '../entities/acquisition-state';
 
-import { Observable, Observer, Subscription } from 'rxjs';
+import { Subscription } from 'rxjs';
+
+import { QuestionsCounter } from './questions-counter.service'
 
 @Injectable()
-export class QuestionScheduler {
+export class QuestionsScheduler {
 
 
     private newQuestions: Question[];
@@ -14,12 +16,15 @@ export class QuestionScheduler {
     private inCourseOfAcquisitionQuestions: Question[];
     private acquiredQuestions: Question[];
 
-    private questionSequence: Function[];
+    private questionSequence: Question[][];
 
-    private subscriptions: Subscription[]
+    private subscriptions: Subscription[];
 
-    constructor() {
-        this.initQuestionSequence();
+
+
+    constructor(
+        private questionsCounter: QuestionsCounter
+    ) {
         this.newQuestions = [];
         this.nonAcquiredQuestions = [];
         this.inCourseOfAcquisitionQuestions = [];
@@ -37,14 +42,26 @@ export class QuestionScheduler {
         }
     }
 
+
     getNextQuestion(): Question {
-        let questionGetter = this.questionSequence.shift();
+        let nextQuestionsSubSet: Question[];
+        nextQuestionsSubSet = this.getNextSubSetOfQuestions();
 
-        let nextQuestion = questionGetter();
-
-        this.questionSequence.push(questionGetter);
+        let nextQuestion: Question;
+        nextQuestion = this.getNextQuestionInSubset(nextQuestionsSubSet);
+        if (!nextQuestion) {
+            nextQuestion = this.getNextQuestion();
+            this.questionsCounter.increment();
+        }
 
         return nextQuestion;
+    }
+
+    private getNextSubSetOfQuestions(): Question[] {
+        let questionsSubSet: Question[];
+        questionsSubSet = this.questionSequence.shift();
+        this.questionSequence.push(questionsSubSet);
+        return questionsSubSet;
     }
 
     private unsubscribeAllSubscriptions() {
@@ -53,10 +70,13 @@ export class QuestionScheduler {
         }
         this.subscriptions = [];
     }
+
     private defineObservableQuestion(question: Question) {
-        let subscription = new Observable<Question>(
-            (observer: Observer<Question>) => question.addQuestionHaveNewAnswerObserver(observer)
-        ).subscribe(this.onObservableQuestionEmmit);
+        let observableQuestion = question.getObservableQuestion();
+        let subscription = observableQuestion.subscribe((question: Question) => {
+            this.onObservableQuestionEmmit(question);
+        }
+        );
         this.subscriptions.push(subscription);
     }
 
@@ -90,47 +110,48 @@ export class QuestionScheduler {
     }
 
     private initQuestionSequence() {
-        this.questionSequence.push(this.getNextNewQuestion);
-        this.questionSequence.push(this.getNextNewQuestion);
-        this.questionSequence.push(this.getNextNonAcquiredQuestion);
-        this.questionSequence.push(this.getNextNonAcquiredQuestion);
-        this.questionSequence.push(this.getNextInCourseOfAcquisitionQuestion);
-        this.questionSequence.push(this.getNextInCourseOfAcquisitionQuestion);
-        this.questionSequence.push(this.getNextInCourseOfAcquisitionQuestion);
-        this.questionSequence.push(this.getNextAcquiredQuestion);
+        this.questionSequence = [];
+        this.questionSequence.push(this.newQuestions);
+        this.questionSequence.push(this.newQuestions);
+        this.questionSequence.push(this.nonAcquiredQuestions);
+        this.questionSequence.push(this.nonAcquiredQuestions);
+        this.questionSequence.push(this.inCourseOfAcquisitionQuestions);
+        this.questionSequence.push(this.inCourseOfAcquisitionQuestions);
+        this.questionSequence.push(this.inCourseOfAcquisitionQuestions);
+        this.questionSequence.push(this.acquiredQuestions);
     }
 
-    private getNextNewQuestion(): Question {
-        return this.findNextQuestion(this.nonAcquiredQuestions);
-    }
-
-    private getNextNonAcquiredQuestion(): Question {
-        return this.findNextQuestion(this.nonAcquiredQuestions);
-    }
-
-    private getNextInCourseOfAcquisitionQuestion(): Question {
-        return this.findNextQuestion(this.inCourseOfAcquisitionQuestions);
-    }
-
-    private getNextAcquiredQuestion(): Question {
-        return this.findNextQuestion(this.nonAcquiredQuestions);
-    }
-
-    private findNextQuestion(questionsSubSet: Question[]): Question {
+    private getNextQuestionInSubset(questionsSubSet: Question[]): Question {
 
         let nextQuestion: Question;
         let minAgeInSecond = 30
 
-        if (questionsSubSet.length > 0 && questionsSubSet[0].getLastUserAnswerAgeInSeconde() < minAgeInSecond) {
-            nextQuestion = questionsSubSet[0];
+        if ( questionsSubSet.length > 0 && questionsSubSet[0].getLastAnserOrderFromGrobalLastAnswer() > 0) {
+            nextQuestion = questionsSubSet.shift();
+        } else {
+            nextQuestion = undefined
         }
 
         return nextQuestion;
     }
 
+    private nextQuestionInSubsetIsValidQuestion (questionsSubSet: Question []) {
+        let minQuestionOrder : number = 4;
+        let isValidQuestion : boolean = true;
+
+        if (questionsSubSet.length < 0) {
+            isValidQuestion = false;
+        }
+        if (this.questionsCounter.getQuestionsCount() > minQuestionOrder) {
+            
+        }
+
+        return isValidQuestion;
+    }
+
     private sortQuestionByAnswerDate(questions: Question[]) {
         return questions.sort((questionA: Question, questionB: Question) => {
-            return questionA.getLastUserAnswerDate().getTime() - questionB.getLastUserAnswerDate().getTime();
+            return questionA.compareByAnserOrder(questionB);
         })
     }
 }

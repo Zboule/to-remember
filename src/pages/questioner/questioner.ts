@@ -1,8 +1,15 @@
 import { Component, OnInit } from '@angular/core';
 import { NavController, NavParams } from 'ionic-angular';
 
+import { AcquisitionState } from '../../logic/entities/acquisition-state';
+
+import { Observable } from 'rxjs';
+
 import { Question } from '../../logic/entities/question';
-import { QuestionGeneratorService } from '../../logic/services/question-generator.service';
+
+import { QuestionsScheduler } from '../../logic/services/questions-scheduler.service';
+import { QuestionsService } from '../../logic/services/questions.service';
+import { QuestionsCounter } from '../../logic/services/questions-counter.service';
 
 @Component({
   selector: 'page-questioner',
@@ -12,30 +19,34 @@ export class QuestionerPage implements OnInit {
 
   curentQuestion: Question;
   isAnswerVisibile: boolean;
+  acquisitionState = AcquisitionState;
 
   constructor(
     public navCtrl: NavController,
     public navParams: NavParams,
-    public questionGenerator: QuestionGeneratorService) {
+    public questionScheduler: QuestionsScheduler,
+    public questionService: QuestionsService,
+    public questionCounter: QuestionsCounter) {
   }
 
   ngOnInit() {
-    this.curentQuestion = new Question(); // Not sure
-    this.isAnswerVisibile = false;
   }
 
   ionViewWillEnter() {
-    this.getQuestion();
+    this.getQuestions().subscribe((questions: Question[]) => {
+      this.questionScheduler.setQuestions(questions);
+      this.askQuestion()
+    });
   }
 
   clickWrongAnswer() {
     this.curentQuestion.addWrongAnswer();
-    this.getQuestion();
+    this.askQuestion();
   }
 
   clickCorrectAnswer() {
     this.curentQuestion.addCorrectAnswer();
-    this.getQuestion();
+    this.askQuestion();
   }
 
   hideAnswer() {
@@ -46,15 +57,19 @@ export class QuestionerPage implements OnInit {
     this.isAnswerVisibile = true;
   }
 
-  private getQuestion() {
-    this.questionGenerator.getQuestion().subscribe(
-      (question: Question) => {
-        this.setQuestion(question);
-      }
-    );
+  private getQuestions(): Observable<Question[]> {
+    let categories: string[];
+    categories = this.navParams.get('categories');
+
+    return this.questionService.getQuestionsByCategories(categories);
   }
 
-  private setQuestion(question: Question) {
+  private askQuestion() {
+    let nextQuestion = this.questionScheduler.getNextQuestion();
+    this.setCurentQuestion(nextQuestion);
+  }
+
+  private setCurentQuestion(question: Question) {
     this.hideAnswer();
     this.curentQuestion = question;
   }

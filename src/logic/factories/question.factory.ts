@@ -2,18 +2,22 @@ import { Injectable } from '@angular/core';
 
 import { Question } from '../entities/question';
 
+import {QuestionsCounter} from '../services/questions-counter.service'
+
 @Injectable()
 export class QuestionFactory {
 
-    constructor() { }
+    constructor(
+        private questionsCounter : QuestionsCounter
+    ) { }
 
     createQuestionFromJsonData(jsonData: any): Question {
-        let question: Question = new Question();
+        let question: Question = new Question(this.questionsCounter);
 
-        //TODO: Mieux gérer les set et les get
         question.answer = jsonData.answer;
         question.question = jsonData.question;
         question.categories = jsonData.categories;
+        
         return question;
     }
 }

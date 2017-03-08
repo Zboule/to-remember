@@ -18,7 +18,7 @@ export class HomePage {
   }
 
   private navigateToQuestioner() {
-    this.navCtrl.push(QuestionerPage);
+    this.navCtrl.push(QuestionerPage,{categories:['sf']});
   }
 
 }
